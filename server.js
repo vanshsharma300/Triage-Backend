@@ -296,7 +296,7 @@ app.post('/checkExercise', async(req,res)=>{
 })
 
 app.get('/getExercise', async(req,res)=>{
-  const sql = "SELECT * FROM exercise";
+  const sql = "SELECT * FROM showexercise";
   db.query(sql, (err, data) => {
     if(err){
         return res.status(400).json({message:err.message});
@@ -425,11 +425,11 @@ app.post("/loginById", (req, res) => {
 });
 
 app.post('/api/save-user-color', async (req, res) => {
-  const { userId, quesName, exerciseName, selectedColor } = req.body;
+  const { userId, quesName, exerciseName, selectedColor,correctans } = req.body;
 
   try {
-    const query = 'INSERT INTO user_selected_colors (userId, quesName, exerciseName, selectedColor) VALUES (?, ?, ?, ?)';
-    const values = [userId, quesName, exerciseName, selectedColor];
+    const query = 'INSERT INTO user_selected_colors (userId, quesName, exerciseName, selectedColor,correctans) VALUES (?, ?, ?, ?,?)';
+    const values = [userId, quesName, exerciseName, selectedColor,correctans];
 
    
     db.query(query, values, (err, results) => {
@@ -490,6 +490,34 @@ app.get('/getSelectedColors/:id', async(req,res)=>{
 
 })
 })
+
+app.get('/get-correct-answer-percentage/:exerciseName', async (req, res) => {
+  const { exerciseName } = req.params;
+  console.log("this is testing: ",exerciseName);
+  const sql = `
+    SELECT 
+      quesName,
+      COUNT(CASE WHEN correctans = 1 THEN 1 END) AS correctCount,
+      COUNT(*) AS totalCount,
+      CASE 
+        WHEN COUNT(*) = 0 THEN 0
+        ELSE (COUNT(CASE WHEN correctans = 1 THEN 1 END) / COUNT(*)) * 100 
+      END AS correctPercentage
+    FROM user_selected_colors
+    WHERE exerciseName = ?
+    GROUP BY quesName
+  `;
+
+  db.query(sql, exerciseName, (err, data) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    } else {
+      return res.status(200).json({ message: "success", data });
+    }
+  });
+});
+
+
 
 app.listen(8081, () => {
   console.log("listening ...");
